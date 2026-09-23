@@ -14,6 +14,7 @@ import sqlite3, os, hashlib
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH   = os.path.join(os.path.dirname(os.path.abspath(__file__)), "knowledge.db")
 
+# Mapping: context doc name → file path (relative to repo root)
 CONTEXT_DOCS = {
     "overview":         "context/overview.md",
     "architecture":     "context/architecture.md",
@@ -29,6 +30,7 @@ CONTEXT_DOCS = {
     "gitContext":       "context/gitContext.md",
     "revert-state":    "context/revert-state.md",
     "savings-log":     "context/savings-log.md",
+    "session-snapshot": "context/session-snapshot.md",
 }
 
 def file_hash(path):
@@ -46,11 +48,12 @@ def main():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
+    # Ensure content_hash column exists (added by this script; rebuild_db may not have it yet)
     try:
         c.execute("ALTER TABLE context_documents ADD COLUMN content_hash TEXT")
         conn.commit()
     except sqlite3.OperationalError:
-        pass
+        pass  # column already exists
 
     updated = []
     skipped = []
@@ -69,12 +72,14 @@ def main():
         ).fetchone()
 
         if row is None:
+            # Doc not in DB yet — insert it
             c.execute(
                 "INSERT INTO context_documents (name, path, updated_at, content_hash) VALUES (?, ?, date('now'), ?)",
                 (name, rel_path, new_hash)
             )
             updated.append(f"+ {rel_path} (new)")
         elif row[0] != new_hash:
+            # Hash changed — update timestamp and hash
             c.execute(
                 "UPDATE context_documents SET updated_at = date('now'), content_hash = ? WHERE name = ?",
                 (new_hash, name)
@@ -86,7 +91,7 @@ def main():
     conn.commit()
     conn.close()
 
-    print("Context sync complete.")
+    print(f"Context sync complete.")
     if updated:
         print(f"  Updated ({len(updated)}):")
         for f in updated:
