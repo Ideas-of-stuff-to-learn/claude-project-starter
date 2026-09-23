@@ -1,0 +1,6 @@
+{
+  "_comment": "Project-specific config read by plugin hook scripts. Fill in after setup.",
+  "huge_files": [],
+  "source_dirs": [],
+  "formatter_command": null
+}

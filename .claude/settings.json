@@ -1,0 +1,4 @@
+{
+  "extraKnownMarketplaces": ["Ideas-of-stuff-to-learn/claude-intelligence-plugin"],
+  "enabledPlugins": ["claude-intelligence-plugin"]
+}
